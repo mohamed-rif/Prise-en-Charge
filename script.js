@@ -1,32 +1,33 @@
 // Import jsPDF
 const { jsPDF } = window.jspdf;
 
+// Initialiser le compteur de fiches dans LocalStorage
+if (!localStorage.getItem("ficheCounter")) {
+    localStorage.setItem("ficheCounter", 1);
+}
+
 // Événement pour générer le PDF
 document.getElementById("generatePdf").addEventListener("click", () => {
     const formData = getFormData();
 
-    function isFormDataValid(data) {
-        // Vérifier que tous les champs obligatoires ne sont ni vides ni des chaînes contenant uniquement des espaces
-        const requiredFields = ["nom", "adresse", "telephone", "typeAppareil", "marque", "chargeur", "description", "dateDepot"];
-        for (const field of requiredFields) {
-            if (!data[field] || data[field].length === 0) {
-                return false; // Champ vide ou non défini
-            }
-        }
-        return true;
+    if (!isFormDataValid(formData)) {
+        showAlert("Veuillez remplir tous les champs correctement.", "error");
+        return;
     }
-    
-
 
     showLoader();
 
-    // Génération du PDF
+    // Récupérer le numéro actuel de la fiche et l'incrémenter
+    const ficheNumber = localStorage.getItem("ficheCounter");
+    localStorage.setItem("ficheCounter", parseInt(ficheNumber) + 1);
+
+    // Génération du PDF avec le numéro unique
     const pdf = new jsPDF();
-    addContentToPdf(pdf, formData);
+    addContentToPdf(pdf, formData, ficheNumber);
 
     hideLoader();
     resetForm();
-    showAlert("PDF généré avec succès !", "success");
+    showAlert(`PDF généré avec succès : Fiche N° ${ficheNumber} !`, "success");
 });
 
 // Fonction pour récupérer les données du formulaire
@@ -47,12 +48,11 @@ function getFormData() {
 
 // Validation des données du formulaire
 function isFormDataValid(data) {
-    // Vérifie que tous les champs sont remplis et qu'une option "chargeur" est sélectionnée
     return Object.values(data).every((field) => field.trim() !== "") && data.chargeur !== "";
 }
 
 // Ajout de contenu au PDF
-function addContentToPdf(pdf, formData) {
+function addContentToPdf(pdf, formData, ficheNumber) {
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
@@ -61,11 +61,11 @@ function addContentToPdf(pdf, formData) {
     const logoSize = 30;
     pdf.addImage(logoPath, "PNG", 10, 10, logoSize, logoSize);
 
-    // Titre centré
+    // Titre avec numéro de fiche
     pdf.setFont("Helvetica", "bold");
     pdf.setFontSize(20);
     pdf.setTextColor("#004085");
-    pdf.text("Fiche de Prise en Charge", pageWidth / 2, 30, { align: "center" });
+    pdf.text(`Fiche de Prise en Charge N° ${ficheNumber}`, pageWidth / 2, 30, { align: "center" });
 
     // Ligne de séparation
     pdf.setDrawColor(0, 0, 0);
@@ -132,7 +132,7 @@ function addContentToPdf(pdf, formData) {
     pdf.text(footerText, pageWidth / 2, pageHeight - 15, { align: "center" });
 
     // Sauvegarder le PDF
-    pdf.save("Prise_en_Charge.pdf");
+    pdf.save(`Fiche_N${ficheNumber}.pdf`);
 }
 
 // Réinitialisation du formulaire
